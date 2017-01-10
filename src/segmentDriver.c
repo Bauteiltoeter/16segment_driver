@@ -79,6 +79,7 @@ void send_byte(uint8_t value)
 	
 	for(uint8_t i = 0; i < 8; i++)
 	{
+		mask = mask >> 1;
 		if(value & mask == 0)
 			PORT_595 &=~mask;
 		else
