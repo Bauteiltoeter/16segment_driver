@@ -25,8 +25,8 @@ typedef enum {
 	down
 } char_pos_t;
 
-void init();
-void update_framebuffer();
+void init(void);
+void update_framebuffer(void);
 void set_brightness(uint8_t percent);
 void blank(void);
 extern char charbuffer[2][11];

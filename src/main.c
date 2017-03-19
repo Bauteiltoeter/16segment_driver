@@ -15,13 +15,13 @@
 #define UART_BAUD_RATE 115200
 
 void process_byte(uint8_t byte);
+void parse_data(uint8_t* data, uint8_t length);
 
 typedef enum {
 	wait_initialisation,
 	wait_id,
 	ready,
-	receiving,
-	receiving_brightness
+    receiving
 } com_status_t;
 
 typedef enum {
@@ -51,7 +51,7 @@ int main(void)
 	set_brightness(100);
 
 	blank();
-	sprintf(charbuffer[0],"Waiting");
+    sprintf(charbuffer[0],"Waiting 0O");
 	sprintf(charbuffer[1],"for Init");
 	update_framebuffer();
 

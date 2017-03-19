@@ -1,0 +1,6 @@
+src/main.c
+src/segmentDriver.c
+src/segmentDriver.h
+src/temp.c
+src/uart.c
+src/uart.h

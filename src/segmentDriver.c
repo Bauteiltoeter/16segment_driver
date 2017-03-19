@@ -81,7 +81,7 @@ uint16_t charset[256] = {
 	0b1000100000000000,		//-
 	0b0000000000010000,		//.
 	0b0100010000000000,		// /
-	0b0000101000000110,		// °
+	0b0000101000000110,		// ï¿½
 	0b1111111111111111
 };
 
@@ -89,14 +89,14 @@ int i=0;
 
 
 
-void init()
+void init(void)
 {
 	DDR_595 |= (1<<RESET_595) | (1<<OE_595) | (1<<LATCH_595) | (1<<DATA_595) | (1<<SCK_595);
 	PORT_595 |= (1<<RESET_595) | (1<<LATCH_595);
 	PORT_595 &=~( (1<<OE_595)  | (1<<SCK_595));
 	ANODE_DDR |= (0x0F);
 	
-	//100µs timer interrupt for multiplexing
+	//100ï¿½s timer interrupt for multiplexing
 	TCCR0A = (1<<WGM01); //CTC mode
 	TCCR0B = (1<<CS01) | (1<<CS00); //Prescaler 64
 	TIMSK0 = (1<<OCIE0A); //
@@ -146,11 +146,13 @@ uint8_t ascii_to_index(char ascii)
 	if(ascii=='\0')
 		return ascii_to_index(' ');
 		
-	if(ascii=='°')
+    if(ascii=='Ã¤')
 		return 52;
 		
 	if(ascii=='~')
 		return 53;
+
+    return 0;
 }
 
 uint16_t mangle_segments(uint16_t character, char_pos_t char_pos)
