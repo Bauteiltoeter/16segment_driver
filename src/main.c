@@ -12,10 +12,11 @@
 #include "segmentDriver.h"
 #include <stdio.h>
 #include "uart.h"
-#define UART_BAUD_RATE 115200
+#define UART_BAUD_RATE 9600
 
 void process_byte(uint8_t byte);
 void parse_data(uint8_t* data, uint8_t length);
+uint8_t calc_checksum(uint8_t* data, uint8_t length);
 
 typedef enum {
 	wait_initialisation,
@@ -32,7 +33,6 @@ typedef enum {
 typedef enum {
 	character_update = 0x01,
 	brightness_update = 0x02
-	
 } datatypes;
 
 int main(void)
@@ -51,10 +51,11 @@ int main(void)
 	set_brightness(100);
 
 	blank();
-    sprintf(charbuffer[0],"Waiting 0O");
+    sprintf(charbuffer[0],"Waiting ");
 	sprintf(charbuffer[1],"for Init");
 	update_framebuffer();
 
+    int i=0;
     while(1)
     {
 
@@ -64,8 +65,38 @@ int main(void)
 		unsigned int c = uart_getc();
 		if (! ( c & UART_NO_DATA) )
 		{	
-			process_byte(c);
-		}			
+            if(c & UART_FRAME_ERROR)
+            {
+                blank();
+
+                sprintf(charbuffer[0],"Frameerror");
+                update_framebuffer();
+            } else if(c & UART_PARITY_ERROR) {
+                blank();
+                sprintf(charbuffer[0],"Parity");
+                update_framebuffer();
+            } else {
+                i++;
+                process_byte(c);
+                 blank();
+
+                sprintf(charbuffer[0],"Byte %d",i);
+
+                sprintf(charbuffer[1],"%d      ", c);
+                update_framebuffer();
+            }
+
+
+
+        }
+        else if( c & UART_FRAME_ERROR)
+        {
+
+        }
+        else if( c & UART_PARITY_ERROR)
+        {
+
+        }
     }
 }
 
@@ -90,7 +121,8 @@ void process_byte(uint8_t byte)
 		break;
 		case wait_id:
 			blank();
-			sprintf(charbuffer[0],"Init");
+            sprintf(charbuffer[0],"Init");
+
 			sprintf(charbuffer[1],"ID %d", byte);
 			update_framebuffer();
 			uart_putc(id_assign);
@@ -103,7 +135,7 @@ void process_byte(uint8_t byte)
 				com_status = wait_id;
 			if(byte==data_transmit)
 			{
-				com_status = receiving;
+                com_status = receiving;
 				receiving_counter=0;
 			}				
 		break;
@@ -121,7 +153,7 @@ void process_byte(uint8_t byte)
 				databuffer[receiving_counter-2]=byte;
 			}
 			receiving_counter++;
-			
+
 			if(receiving_counter >= 2+message_length)
 			{
 				if(id==message_id)
@@ -129,9 +161,16 @@ void process_byte(uint8_t byte)
 					uart_putc(data_transmit);
 					uart_putc(id);
 					uart_putc(1);
-					uart_putc(11);
+                    if(databuffer[message_length-1]==calc_checksum(databuffer,message_length-1))
+                    {
+                        uart_putc(0);
+                        parse_data(databuffer,message_length);
+                    }
+                    else
+                    {
+                        uart_putc(1);
+                    }
 					
-					parse_data(databuffer,message_length);
 				}
 				else
 				{
@@ -149,7 +188,6 @@ void process_byte(uint8_t byte)
 		break;
 
 	}
-	
 }
 
 void parse_data(uint8_t* data, uint8_t length)
@@ -157,7 +195,7 @@ void parse_data(uint8_t* data, uint8_t length)
 	switch (data[0])
 	{
 		case character_update:
-			for(uint8_t i=0; i < length-1; i++)
+            for(uint8_t i=0; i < length-2; i++)
 				charbuffer[ (i>9) ? 1:0 ] [i%10]  = data[i+1];
 				
 			update_framebuffer();	
@@ -168,3 +206,13 @@ void parse_data(uint8_t* data, uint8_t length)
 	}
 
 }		
+
+uint8_t calc_checksum(uint8_t* data, uint8_t length)
+{
+    uint8_t temp=0;
+    for(uint16_t i=0; i < length; i++)
+    {
+        temp^=data[i];
+    }
+    return temp;
+}

@@ -238,7 +238,7 @@ void blank(void)
 		for(uint8_t y=0; y < 2; y++)
 			charbuffer[y][x]=' ';
 			
-			update_framebuffer();
+    update_framebuffer();
 }
 
 void set_brightness(uint8_t percent)
