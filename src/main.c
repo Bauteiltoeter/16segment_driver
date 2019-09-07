@@ -12,7 +12,7 @@
 #include "segmentDriver.h"
 #include <stdio.h>
 #include "uart.h"
-#define UART_BAUD_RATE 9600
+#define UART_BAUD_RATE 115200
 
 void process_byte(uint8_t byte);
 void parse_data(uint8_t* data, uint8_t length);
@@ -63,7 +63,69 @@ int main(void)
 	
 		
 		unsigned int c = uart_getc();
-		if (! ( c & UART_NO_DATA) )
+
+
+		if ( c & UART_NO_DATA )
+        {
+            /* 
+             * no data available from UART 
+             */
+        }
+        else
+        {
+            /*
+             * new data available from UART
+             * check for Frame or Overrun error
+             */
+            if ( c & UART_FRAME_ERROR )
+            {
+                /* Framing Error detected, i.e no stop bit detected */
+				sprintf(charbuffer[0],"Frameerror");
+                update_framebuffer();
+            }
+            if ( c & UART_OVERRUN_ERROR )
+            {
+                /* 
+                 * Overrun, a character already present in the UART UDR register was 
+                 * not read by the interrupt handler before the next character arrived,
+                 * one or more received characters have been dropped
+                 */
+                sprintf(charbuffer[0],"Overrun");
+                update_framebuffer();
+            }
+            if ( c & UART_BUFFER_OVERFLOW )
+            {
+                /* 
+                 * We are not reading the receive buffer fast enough,
+                 * one or more received character have been dropped 
+                 */
+                uart_puts_P("Buffer overflow error: ");
+				blank();
+				sprintf(charbuffer[0],"Boverflow");
+				
+                update_framebuffer();
+            }
+            /* 
+             * send received character back
+             */
+            //uart_putc( (unsigned char)c );
+
+
+			
+
+			process_byte(c);
+        }
+
+
+
+
+
+
+
+
+
+		
+		/*if (! ( c & UART_NO_DATA) )
 		{	
             if(c & UART_FRAME_ERROR)
             {
@@ -96,7 +158,7 @@ int main(void)
         else if( c & UART_PARITY_ERROR)
         {
 
-        }
+        }*/
     }
 }
 
@@ -158,18 +220,18 @@ void process_byte(uint8_t byte)
 			{
 				if(id==message_id)
 				{
-					uart_putc(data_transmit);
+					/*uart_putc(data_transmit);
 					uart_putc(id);
 					uart_putc(1);
                     if(databuffer[message_length-1]==calc_checksum(databuffer,message_length-1))
-                    {
-                        uart_putc(0);
+                    {*/
+                    //    uart_putc(0);
                         parse_data(databuffer,message_length);
-                    }
+                    /*}
                     else
                     {
                         uart_putc(1);
-                    }
+                    }*/
 					
 				}
 				else

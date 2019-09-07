@@ -72,7 +72,7 @@ uint16_t charset[256] = {
 	0b1010101010111011,		//$
 	0b1110111010011001,		//%
 	0b0000000000000000,		//&
-	0b0000000000000000,		//bank
+	0b0000000000000100,		//'
 	0b0010001000010010,		//(
 	0b0010001000100001,		//)
 	0b1111111100000000,		//*
@@ -81,9 +81,16 @@ uint16_t charset[256] = {
 	0b1000100000000000,		//-
 	0b0000000000010000,		//.
 	0b0100010000000000,		// /
-	0b0000101000000110,		// �
-	0b1111111111111111
-};
+	0b0000101000000110,		// 52 ä
+	0b1111111111111111,     
+	0b0000101000000110,     // 54 °
+	//utsrpnmkhgfedcba
+	0b1000000000100000,    // :
+	0b1000000000100000,    // ;
+	0b0001010000000000,    // <
+	0b1000100000110000,    // =
+	0b0100000100000000,    // >
+	};
 
 int i=0;
 
@@ -96,11 +103,13 @@ void init(void)
 	PORT_595 &=~( (1<<OE_595)  | (1<<SCK_595));
 	ANODE_DDR |= (0x0F);
 	
-	//100�s timer interrupt for multiplexing
+	//100us timer interrupt for multiplexing
 	TCCR0A = (1<<WGM01); //CTC mode
 	TCCR0B = (1<<CS01) | (1<<CS00); //Prescaler 64
 	TIMSK0 = (1<<OCIE0A); //
 	OCR0A=25;
+
+
 	
 	//PWM generation for dim
 	
@@ -142,6 +151,11 @@ uint8_t ascii_to_index(char ascii)
 	{
 		return ascii-' ' + 36;
 	}
+
+	if(ascii>=':' && ascii <='>')
+	{
+		return ascii-':' + 55;
+	}
 	
 	if(ascii=='\0')
 		return ascii_to_index(' ');
@@ -151,6 +165,9 @@ uint8_t ascii_to_index(char ascii)
 		
 	if(ascii=='~')
 		return 53;
+
+	if(ascii==128)
+		return 54;
 
     return 0;
 }
@@ -248,17 +265,36 @@ void set_brightness(uint8_t percent)
 
 ISR(TIMER0_COMPA_vect)
 {
-	
-	set_anode(11);
+	set_anode(10);
 	
 	set_shiftregisters(framebuffer[i]);
+
+	//_delay_ms(1);
+	
 	PORT_595 &=~(1<<LATCH_595);
 	asm volatile ("nop");
-	PORT_595 |= (1<<LATCH_595);
 	asm volatile ("nop");
+	asm volatile ("nop");
+	asm volatile ("nop");
+	asm volatile ("nop");
+	
+		asm volatile ("nop");
+	asm volatile ("nop");
+	asm volatile ("nop");
+	asm volatile ("nop");
+	asm volatile ("nop");
+	PORT_595 |= (1<<LATCH_595);
+
+	for(volatile uint8_t i=0; i<50; i++)
+	{
+		asm volatile("nop");
+	}
+
 	set_anode(i);
+	
 	i++;
-	i=i%10;
+	if(i>9)
+		i=0;
 }
 
 
